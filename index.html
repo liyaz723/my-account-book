@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>智能记账本 · 年度收支 + 计算器键盘</title>
+    <title>智能记账本 · 月度收支 + 计算器键盘</title>
     <style>
         * {
             box-sizing: border-box;
@@ -17,7 +17,6 @@
             font-family: system-ui, -apple-system, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
         }
 
-        /* 主容器 */
         .ledger-container {
             max-width: 800px;
             margin: 0 auto;
@@ -26,10 +25,9 @@
             box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.1);
             overflow: hidden;
             padding: 20px 20px 28px;
-            transition: all 0.2s;
         }
 
-        /* 年份 & 统计卡片 */
+        /* 年份切换 */
         .year-header {
             display: flex;
             align-items: baseline;
@@ -56,8 +54,6 @@
             border-radius: 30px;
             cursor: pointer;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            transition: 0.1s;
-            color: #1f2937;
         }
         .year-selector span {
             font-size: 1.5rem;
@@ -66,49 +62,48 @@
             text-align: center;
             color: #1e293b;
         }
+        /* 统计卡片 - 数字不换行，字体缩小 */
         .stats-cards {
             display: flex;
-            gap: 16px;
+            gap: 12px;
             margin-bottom: 28px;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
         }
         .stat-card {
             flex: 1;
-            background: linear-gradient(145deg, #ffffff, #f8fafc);
-            border-radius: 28px;
-            padding: 16px 18px;
-            box-shadow: 0 5px 12px rgba(0,0,0,0.03), inset 0 0 0 1px rgba(255,255,255,0.8);
+            background: #ffffff;
+            border-radius: 24px;
+            padding: 12px 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
             border: 1px solid #eef2ff;
+            min-width: 0; /* 防止溢出 */
         }
         .stat-label {
-            font-size: 0.85rem;
-            font-weight: 500;
+            font-size: 0.7rem;
+            font-weight: 600;
             color: #5b6e8c;
             letter-spacing: 0.3px;
             margin-bottom: 6px;
         }
         .stat-number {
-            font-size: 1.9rem;
+            font-size: 1.25rem;
             font-weight: 800;
             color: #0f172a;
-            line-height: 1.2;
-            word-break: break-word;
+            white-space: nowrap;
+            overflow-x: auto;
+            line-height: 1.3;
         }
-        .stat-number small {
-            font-size: 1rem;
-            font-weight: 500;
+        /* 针对小屏幕再缩小一点 */
+        @media (max-width: 500px) {
+            .stat-number {
+                font-size: 1rem;
+            }
         }
-        .income-number {
-            color: #0e7c32;
-        }
-        .net-number {
-            color: #1e40af;
-        }
-        .expense-number {
-            color: #c2410c;
-        }
+        .income-number { color: #0e7c32; }
+        .expense-number { color: #c2410c; }
+        .net-number { color: #1e40af; }
 
-        /* 表格区域 (类似Excel) */
+        /* 表格 */
         .table-wrapper {
             overflow-x: auto;
             border-radius: 24px;
@@ -120,18 +115,17 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 0.85rem;
-            min-width: 380px;
+            min-width: 350px;
         }
         .month-table th {
             background: #f9fbfd;
-            padding: 14px 8px;
+            padding: 12px 6px;
             font-weight: 600;
             color: #2c3e66;
             border-bottom: 1px solid #e2e8f0;
-            font-size: 0.85rem;
         }
         .month-table td {
-            padding: 10px 6px;
+            padding: 8px 4px;
             border-bottom: 1px solid #edf2f7;
             text-align: center;
         }
@@ -139,12 +133,11 @@
             width: 100%;
             border: 1px solid #e2e8f0;
             border-radius: 14px;
-            padding: 10px 6px;
+            padding: 8px 4px;
             text-align: center;
             font-size: 0.85rem;
             font-weight: 500;
             background: white;
-            transition: all 0.15s;
         }
         .month-input:focus {
             outline: none;
@@ -158,90 +151,83 @@
             border-radius: 12px;
         }
 
-        /* 功能按钮组 */
+        /* 功能按钮 */
         .action-buttons {
             display: flex;
             flex-wrap: wrap;
-            gap: 12px;
-            margin-bottom: 28px;
+            gap: 10px;
+            margin-bottom: 24px;
             justify-content: center;
         }
         .btn {
             border: none;
             background: #f1f4f9;
-            padding: 10px 18px;
-            border-radius: 44px;
+            padding: 8px 16px;
+            border-radius: 40px;
             font-weight: 600;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             cursor: pointer;
-            transition: 0.2s;
-            color: #1f2a44;
             flex: 1 0 auto;
-            box-shadow: 0 1px 1px rgba(0,0,0,0.05);
         }
         .btn-primary {
             background: #2c3e66;
             color: white;
-            box-shadow: 0 4px 8px rgba(44,62,102,0.2);
-        }
-        .btn-primary:active {
-            transform: scale(0.97);
         }
         .btn-outline {
             background: white;
             border: 1px solid #cbd5e1;
         }
 
-        /* 计算器 & 键盘区域 */
+        /* 全新计算器键盘 (九键 + 加减乘除等) */
         .calc-panel {
             background: #f8fafd;
             border-radius: 32px;
-            padding: 18px 16px;
-            margin-top: 8px;
+            padding: 16px;
             border: 1px solid #e9edf2;
         }
         .calc-display {
             background: white;
             border-radius: 28px;
-            padding: 16px 20px;
-            margin-bottom: 20px;
+            padding: 14px 18px;
+            margin-bottom: 18px;
             text-align: right;
-            font-size: 1.8rem;
+            font-size: 1.6rem;
             font-weight: 600;
             font-family: monospace;
-            letter-spacing: 1px;
-            box-shadow: inset 0 1px 4px #e2e8f0;
-            word-break: break-all;
-            min-height: 75px;
+            min-height: 70px;
             color: #0f172a;
+            word-break: break-all;
+            box-shadow: inset 0 1px 3px #e2e8f0;
         }
-        .calc-keys {
+        .calc-keyboard {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 12px;
-            margin-bottom: 20px;
         }
         .key {
             background: white;
             border: none;
             padding: 14px 0;
-            border-radius: 48px;
-            font-size: 1.3rem;
+            border-radius: 60px;
+            font-size: 1.2rem;
             font-weight: 600;
             cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-            transition: 0.05s linear;
-            color: #1e293b;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             text-align: center;
+            transition: 0.05s linear;
         }
         .key:active {
             transform: scale(0.96);
             background: #eef2ff;
         }
+        .key-number {
+            background: #ffffff;
+            font-size: 1.3rem;
+        }
         .key-op {
             background: #eef2ff;
             color: #2563eb;
-            font-size: 1.5rem;
+            font-size: 1.3rem;
         }
         .key-equal {
             background: #2c3e66;
@@ -251,28 +237,12 @@
         .key-clear {
             background: #fee2e2;
             color: #b91c1c;
-        }
-        .quick-ops {
-            display: flex;
-            gap: 12px;
-            margin-top: 8px;
-            justify-content: space-between;
-        }
-        .quick-btn {
-            background: #eef2ff;
-            border: none;
-            flex: 1;
-            padding: 12px 0;
-            border-radius: 40px;
-            font-weight: 700;
             font-size: 1rem;
-            cursor: pointer;
-            color: #1f3a8a;
         }
         .selected-hint {
             background: #e6f7ec;
             border-radius: 30px;
-            padding: 6px 14px;
+            padding: 6px 12px;
             font-size: 0.7rem;
             font-weight: 500;
             display: inline-block;
@@ -281,16 +251,14 @@
         }
         footer {
             text-align: center;
-            font-size: 0.65rem;
+            font-size: 0.6rem;
             color: #7c8ba0;
-            margin-top: 24px;
+            margin-top: 20px;
         }
-        @media (max-width: 550px) {
-            .ledger-container {
-                padding: 16px;
-            }
-            .stat-number {
-                font-size: 1.4rem;
+        @media (max-width: 480px) {
+            .key {
+                padding: 12px 0;
+                font-size: 1rem;
             }
             .calc-display {
                 font-size: 1.3rem;
@@ -300,7 +268,6 @@
 </head>
 <body>
 <div class="ledger-container">
-    <!-- 年份切换 + 统计卡片 -->
     <div class="year-header">
         <div class="year-selector">
             <button id="prevYearBtn">←</button>
@@ -309,6 +276,8 @@
         </div>
         <div class="selected-hint" id="selectedHint">⚡ 点击收入/支出单元格</div>
     </div>
+
+    <!-- 统计卡片，数字不会换行 -->
     <div class="stats-cards">
         <div class="stat-card">
             <div class="stat-label">💰 本年总收入</div>
@@ -324,103 +293,80 @@
         </div>
     </div>
 
-    <!-- Excel风格表格: 月份 | 收入 | 支出 -->
+    <!-- 月度表格 -->
     <div class="table-wrapper">
         <table class="month-table" id="monthTable">
-            <thead>
-                <tr><th>月份</th><th>💰 收入 (元)</th><th>💸 支出 (元)</th></tr>
-            </thead>
-            <tbody id="tableBody">
-                <!-- 动态生成 1-12 月 -->
-            </tbody>
+            <thead><tr><th>月份</th><th>💰 收入 (元)</th><th>💸 支出 (元)</th></tr></thead>
+            <tbody id="tableBody"></tbody>
         </table>
     </div>
 
-    <!-- 功能按钮栏 -->
+    <!-- 工具栏按钮 -->
     <div class="action-buttons">
         <button class="btn btn-outline" id="exportCsvBtn">📎 导出CSV</button>
         <button class="btn btn-outline" id="copyLastYearBtn">📋 复制上年数据</button>
         <button class="btn btn-outline" id="clearCurrentYearBtn">🗑️ 清空本年</button>
     </div>
 
-    <!-- 计算器 + 键盘区域 (包含加减乘除和数字) -->
+    <!-- 计算器：九键 + 加减乘除等号 -->
     <div class="calc-panel">
         <div class="calc-display" id="calcDisplay">0</div>
-        <div class="calc-keys">
-            <button class="key key-clear" data-action="clear">C</button>
-            <button class="key" data-digit="7">7</button>
-            <button class="key" data-digit="8">8</button>
-            <button class="key" data-digit="9">9</button>
+        <div class="calc-keyboard">
+            <!-- 第一行 -->
+            <button class="key key-number" data-digit="7">7</button>
+            <button class="key key-number" data-digit="8">8</button>
+            <button class="key key-number" data-digit="9">9</button>
             <button class="key key-op" data-op="/">÷</button>
-            <button class="key" data-digit="4">4</button>
-            <button class="key" data-digit="5">5</button>
-            <button class="key" data-digit="6">6</button>
+            <!-- 第二行 -->
+            <button class="key key-number" data-digit="4">4</button>
+            <button class="key key-number" data-digit="5">5</button>
+            <button class="key key-number" data-digit="6">6</button>
             <button class="key key-op" data-op="*">×</button>
-            <button class="key" data-digit="1">1</button>
-            <button class="key" data-digit="2">2</button>
-            <button class="key" data-digit="3">3</button>
+            <!-- 第三行 -->
+            <button class="key key-number" data-digit="1">1</button>
+            <button class="key key-number" data-digit="2">2</button>
+            <button class="key key-number" data-digit="3">3</button>
             <button class="key key-op" data-op="-">−</button>
-            <button class="key" data-digit="0">0</button>
-            <button class="key" data-digit=".">.</button>
-            <button class="key key-equal" data-action="equal">=</button>
+            <!-- 第四行 -->
+            <button class="key key-number" data-digit="0">0</button>
+            <button class="key key-number" data-digit=".">.</button>
+            <button class="key key-clear" data-action="clear">C</button>
             <button class="key key-op" data-op="+">+</button>
+            <!-- 第五行：等号占一整行？为了美观，再加一个等号，但右侧对齐，我们简单放等号大按钮，也可以合并两列，但用跨列不好自适应。使用grid会自动排，再补一个等号按钮单独一行？为了视觉，将等号放到第五行第一列，右侧留空? 不，用两个按钮填充 -->
+            <button class="key key-equal" data-action="equal" style="grid-column: span 2;">=</button>
+            <!-- 留两个占位但无需，直接让等号跨两列。再补一个虚拟不可见按钮，但不需要，保持对称 -->
         </div>
-        <!-- 快捷加减乘除行 (满足直接运算) -->
-        <div class="quick-ops">
-            <button class="quick-btn" data-quick="add">➕ 加值</button>
-            <button class="quick-btn" data-quick="sub">➖ 减值</button>
-            <button class="quick-btn" data-quick="mul">✖️ 乘值</button>
-            <button class="quick-btn" data-quick="div">➗ 除值</button>
-        </div>
+        <div style="font-size:0.7rem; text-align:center; margin-top: 12px; color:#6c7a91;">点「=」将计算结果填入选中的单元格</div>
     </div>
-    <footer>✔ 自动保存 | 点击表格单元格即可选中，支持计算器运算填入 / 快捷加减乘除</footer>
+    <footer>✅ 数据自动保存 | 点击单元格后可用计算器 | 数字不换行清晰显示</footer>
 </div>
 
 <script>
-    // ---------- 数据模型 ----------
-    // 全局存储: allData[year][month] = { income, expense }   month 1-12
+    // ---------- 全局数据 ----------
     let allData = {};
     let currentYear = new Date().getFullYear();
-    
-    // 当前选中的单元格信息
-    let selectedCell = {
-        year: null,
-        month: null,
-        field: null,   // 'income' 或 'expense'
-        element: null
-    };
-    
-    // 计算器状态
-    let calcExpression = "0";   // 存储当前输入表达式或数字
+    let selectedCell = { year: null, month: null, field: null, element: null };
+    let calcExpression = "0";
     let justEvaluated = false;
-    
-    // ---------- 初始化 & 本地存储 ----------
+
+    // 存储与加载
+    function saveToLocalStorage() {
+        localStorage.setItem("ledger_all_data_v2", JSON.stringify(allData));
+    }
     function loadFromStorage() {
         const stored = localStorage.getItem("ledger_all_data_v2");
         if (stored) {
             try {
-                const parsed = JSON.parse(stored);
-                // 恢复数据结构, 确保月份完整
-                allData = parsed;
-                // 确保每个年份都有1-12月对象
-                for (let yearStr in allData) {
-                    const year = parseInt(yearStr);
+                allData = JSON.parse(stored);
+                for (let yr in allData) {
                     for (let m = 1; m <= 12; m++) {
-                        if (!allData[year][m]) allData[year][m] = { income: 0, expense: 0 };
-                        else {
-                            if (typeof allData[year][m].income !== 'number') allData[year][m].income = 0;
-                            if (typeof allData[year][m].expense !== 'number') allData[year][m].expense = 0;
-                        }
+                        if (!allData[yr][m]) allData[yr][m] = { income: 0, expense: 0 };
                     }
                 }
-            } catch(e) { console.warn(e); initDemoData(); }
-        } else {
-            initDemoData();
-        }
+            } catch(e) { initDemoData(); }
+        } else { initDemoData(); }
     }
-    
     function initDemoData() {
-        // 创建最近三年示例 (2024, 2025, 2026部分)
         const demoYears = [2024, 2025, 2026];
         demoYears.forEach(yr => {
             if (!allData[yr]) allData[yr] = {};
@@ -428,39 +374,22 @@
                 if (!allData[yr][m]) allData[yr][m] = { income: 0, expense: 0 };
             }
         });
-        // 2024年示例数据
         allData[2024][1] = { income: 12500, expense: 5800 };
         allData[2024][2] = { income: 13200, expense: 6200 };
         allData[2024][3] = { income: 14800, expense: 7050 };
-        allData[2024][4] = { income: 14200, expense: 6900 };
         allData[2025][1] = { income: 15600, expense: 6900 };
         allData[2025][2] = { income: 14200, expense: 7300 };
         allData[2025][3] = { income: 16800, expense: 8100 };
         allData[2025][4] = { income: 17500, expense: 8450 };
-        allData[2025][5] = { income: 18200, expense: 9100 };
         allData[2026][1] = { income: 11000, expense: 5200 };
-        allData[2026][2] = { income: 12400, expense: 6100 };
-        // 让当前年看起来合理
-        const nowYear = new Date().getFullYear();
-        if (!allData[nowYear]) {
-            allData[nowYear] = {};
-            for (let i=1;i<=12;i++) allData[nowYear][i] = { income: 0, expense: 0 };
-        }
-        // 确保所有年份月份完整
-        for (let yr in allData) {
-            for (let m = 1; m <= 12; m++) {
-                if (!allData[yr][m]) allData[yr][m] = { income: 0, expense: 0 };
-            }
+        const now = new Date().getFullYear();
+        if (!allData[now]) {
+            allData[now] = {};
+            for (let i=1;i<=12;i++) allData[now][i] = { income: 0, expense: 0 };
         }
         saveToLocalStorage();
     }
-    
-    function saveToLocalStorage() {
-        localStorage.setItem("ledger_all_data_v2", JSON.stringify(allData));
-    }
-    
-    // 确保当前年份数据完整
-    function ensureCurrentYearData(year) {
+    function ensureYearData(year) {
         if (!allData[year]) {
             allData[year] = {};
             for (let m = 1; m <= 12; m++) allData[year][m] = { income: 0, expense: 0 };
@@ -471,413 +400,195 @@
             }
         }
     }
-    
-    // 获取指定年份指定月份的数据
-    function getMonthData(year, month, field) {
-        ensureCurrentYearData(year);
-        if (field === 'income') return allData[year][month].income;
-        return allData[year][month].expense;
-    }
-    
-    function setMonthData(year, month, field, value) {
-        ensureCurrentYearData(year);
-        let num = parseFloat(value);
-        if (isNaN(num)) num = 0;
-        if (field === 'income') allData[year][month].income = num;
-        else allData[year][month].expense = num;
-        saveToLocalStorage();
-        // 更新统计和表格
-        if (year === currentYear) {
-            renderTableByYear(currentYear);
-            updateStats(currentYear);
-        }
-        // 如果选中年份是当前年份且单元格匹配，刷新选中高亮状态已在render中重置，需要重新绑定选中信息
-    }
-    
-    // 渲染指定年份表格 (1-12月)
+
+    // 渲染表格
     function renderTableByYear(year) {
-        ensureCurrentYearData(year);
+        ensureYearData(year);
         const tbody = document.getElementById('tableBody');
-        if (!tbody) return;
         tbody.innerHTML = '';
         for (let month = 1; month <= 12; month++) {
-            const row = document.createElement('tr');
-            // 月份列
+            const tr = document.createElement('tr');
             const tdMonth = document.createElement('td');
             tdMonth.innerText = `${month}月`;
-            tdMonth.style.fontWeight = '500';
-            // 收入列
             const tdIncome = document.createElement('td');
-            const incomeInput = document.createElement('input');
-            incomeInput.type = 'number';
-            incomeInput.step = '0.01';
-            incomeInput.value = allData[year][month].income;
-            incomeInput.classList.add('month-input');
-            incomeInput.setAttribute('data-year', year);
-            incomeInput.setAttribute('data-month', month);
-            incomeInput.setAttribute('data-field', 'income');
-            tdIncome.appendChild(incomeInput);
-            // 支出列
+            const incInput = document.createElement('input');
+            incInput.type = 'number'; incInput.step = '0.01';
+            incInput.value = allData[year][month].income;
+            incInput.classList.add('month-input');
+            incInput.setAttribute('data-year', year);
+            incInput.setAttribute('data-month', month);
+            incInput.setAttribute('data-field', 'income');
+            tdIncome.appendChild(incInput);
             const tdExpense = document.createElement('td');
-            const expenseInput = document.createElement('input');
-            expenseInput.type = 'number';
-            expenseInput.step = '0.01';
-            expenseInput.value = allData[year][month].expense;
-            expenseInput.classList.add('month-input');
-            expenseInput.setAttribute('data-year', year);
-            expenseInput.setAttribute('data-month', month);
-            expenseInput.setAttribute('data-field', 'expense');
-            tdExpense.appendChild(expenseInput);
-            
-            row.appendChild(tdMonth);
-            row.appendChild(tdIncome);
-            row.appendChild(tdExpense);
-            tbody.appendChild(row);
+            const expInput = document.createElement('input');
+            expInput.type = 'number'; expInput.step = '0.01';
+            expInput.value = allData[year][month].expense;
+            expInput.classList.add('month-input');
+            expInput.setAttribute('data-year', year);
+            expInput.setAttribute('data-month', month);
+            expInput.setAttribute('data-field', 'expense');
+            tdExpense.appendChild(expInput);
+            tr.appendChild(tdMonth); tr.appendChild(tdIncome); tr.appendChild(tdExpense);
+            tbody.appendChild(tr);
         }
-        // 重新绑定输入事件、焦点事件
         attachTableEvents();
-        // 恢复高亮（如果之前选中的年份和当前年份一致，尝试重新高亮）
-        if (selectedCell.year === currentYear && selectedCell.field && selectedCell.month) {
-            const targetInput = document.querySelector(`input[data-year='${currentYear}'][data-month='${selectedCell.month}'][data-field='${selectedCell.field}']`);
-            if (targetInput) {
-                clearHighlight();
-                targetInput.classList.add('selected-cell');
-                selectedCell.element = targetInput;
-                updateSelectedHint();
-            } else {
-                selectedCell = { year: null, month: null, field: null, element: null };
-                updateSelectedHint();
-            }
-        } else {
-            // 不清空状态，只是丢失高亮
-            clearHighlight();
+        // 恢复高亮
+        if (selectedCell.year === currentYear && selectedCell.month && selectedCell.field) {
+            const target = document.querySelector(`input[data-year='${currentYear}'][data-month='${selectedCell.month}'][data-field='${selectedCell.field}']`);
+            if (target) { clearHighlight(); target.classList.add('selected-cell'); selectedCell.element = target; }
+            else selectedCell = { year: null, month: null, field: null, element: null };
         }
-    }
-    
-    function attachTableEvents() {
-        const inputs = document.querySelectorAll('.month-input');
-        inputs.forEach(input => {
-            input.removeEventListener('focus', handleInputFocus);
-            input.removeEventListener('input', handleInputChange);
-            input.addEventListener('focus', handleInputFocus);
-            input.addEventListener('input', handleInputChange);
-        });
-    }
-    
-    function handleInputFocus(e) {
-        const input = e.target;
-        const year = parseInt(input.getAttribute('data-year'));
-        const month = parseInt(input.getAttribute('data-month'));
-        const field = input.getAttribute('data-field');
-        if (isNaN(year) || isNaN(month)) return;
-        clearHighlight();
-        input.classList.add('selected-cell');
-        selectedCell = {
-            year: year,
-            month: month,
-            field: field,
-            element: input
-        };
         updateSelectedHint();
     }
-    
-    function handleInputChange(e) {
-        const input = e.target;
-        const year = parseInt(input.getAttribute('data-year'));
-        const month = parseInt(input.getAttribute('data-month'));
-        const field = input.getAttribute('data-field');
-        let val = parseFloat(input.value);
-        if (isNaN(val)) val = 0;
-        if (year && month && field) {
-            if (field === 'income') allData[year][month].income = val;
-            else allData[year][month].expense = val;
-            saveToLocalStorage();
-            if (year === currentYear) {
-                updateStats(currentYear);
-            } else if (selectedCell.year === currentYear) {
-                updateStats(currentYear);
-            }
-        }
+    function attachTableEvents() {
+        document.querySelectorAll('.month-input').forEach(inp => {
+            inp.removeEventListener('focus', handleFocus);
+            inp.removeEventListener('input', handleInput);
+            inp.addEventListener('focus', handleFocus);
+            inp.addEventListener('input', handleInput);
+        });
     }
-    
+    function handleFocus(e) {
+        const inp = e.target;
+        const y = parseInt(inp.dataset.year), m = parseInt(inp.dataset.month), f = inp.dataset.field;
+        if (isNaN(y) || isNaN(m)) return;
+        clearHighlight();
+        inp.classList.add('selected-cell');
+        selectedCell = { year: y, month: m, field: f, element: inp };
+        updateSelectedHint();
+    }
+    function handleInput(e) {
+        const inp = e.target;
+        const y = parseInt(inp.dataset.year), m = parseInt(inp.dataset.month), f = inp.dataset.field;
+        let val = parseFloat(inp.value);
+        if (isNaN(val)) val = 0;
+        if (f === 'income') allData[y][m].income = val;
+        else allData[y][m].expense = val;
+        saveToLocalStorage();
+        if (y === currentYear) updateStats(currentYear);
+    }
     function clearHighlight() {
         document.querySelectorAll('.month-input').forEach(el => el.classList.remove('selected-cell'));
     }
-    
     function updateSelectedHint() {
-        const hintSpan = document.getElementById('selectedHint');
+        const hint = document.getElementById('selectedHint');
         if (selectedCell.year && selectedCell.month && selectedCell.field) {
             const val = selectedCell.field === 'income' ? allData[selectedCell.year][selectedCell.month].income : allData[selectedCell.year][selectedCell.month].expense;
-            hintSpan.innerHTML = `✅ 已选中: ${selectedCell.year}年${selectedCell.month}月 · ${selectedCell.field === 'income' ? '收入' : '支出'} = ¥${val.toFixed(2)}`;
+            hint.innerHTML = `✅ 已选中: ${selectedCell.year}年${selectedCell.month}月 · ${selectedCell.field === 'income' ? '收入' : '支出'} = ¥${val.toFixed(2)}`;
         } else {
-            hintSpan.innerHTML = `⚡ 点击收入/支出单元格，使用计算器/快捷运算`;
+            hint.innerHTML = `⚡ 点击收入/支出单元格，使用计算器`;
         }
     }
-    
-    // 更新统计卡片（总收入、总支出、净结余）
     function updateStats(year) {
-        ensureCurrentYearData(year);
-        let totalIncome = 0, totalExpense = 0;
-        for (let m = 1; m <= 12; m++) {
-            totalIncome += allData[year][m].income;
-            totalExpense += allData[year][m].expense;
-        }
-        const net = totalIncome - totalExpense;
-        document.getElementById('totalIncomeDisplay').innerHTML = `¥${totalIncome.toFixed(2)}`;
-        document.getElementById('totalExpenseDisplay').innerHTML = `¥${totalExpense.toFixed(2)}`;
-        document.getElementById('netBalanceDisplay').innerHTML = `¥${net.toFixed(2)}`;
+        ensureYearData(year);
+        let totalInc = 0, totalExp = 0;
+        for (let m=1;m<=12;m++) { totalInc += allData[year][m].income; totalExp += allData[year][m].expense; }
+        document.getElementById('totalIncomeDisplay').innerHTML = `¥${totalInc.toFixed(2)}`;
+        document.getElementById('totalExpenseDisplay').innerHTML = `¥${totalExp.toFixed(2)}`;
+        document.getElementById('netBalanceDisplay').innerHTML = `¥${(totalInc - totalExp).toFixed(2)}`;
     }
-    
-    // 切换年份
     function setYear(year) {
         currentYear = year;
         document.getElementById('currentYearSpan').innerText = year;
         renderTableByYear(year);
         updateStats(year);
-        // 清除选中的高亮后重新同步选中的可能性
-        if (selectedCell.year !== year) {
-            clearHighlight();
-            selectedCell = { year: null, month: null, field: null, element: null };
-            updateSelectedHint();
-        } else {
-            // 尝试重高亮
-            if (selectedCell.element) {
-                const stillExist = document.querySelector(`input[data-year='${selectedCell.year}'][data-month='${selectedCell.month}'][data-field='${selectedCell.field}']`);
-                if (stillExist) {
-                    clearHighlight();
-                    stillExist.classList.add('selected-cell');
-                    selectedCell.element = stillExist;
-                } else {
-                    selectedCell = { year: null, month: null, field: null, element: null };
-                }
-                updateSelectedHint();
-            }
-        }
+        if (selectedCell.year !== year) { clearHighlight(); selectedCell = { year: null, month: null, field: null, element: null }; updateSelectedHint(); }
     }
-    
-    // ---------- 复制上年数据 ----------
     function copyPreviousYearData() {
-        const prevYear = currentYear - 1;
-        ensureCurrentYearData(prevYear);
-        ensureCurrentYearData(currentYear);
-        for (let m = 1; m <= 12; m++) {
-            const prevIncome = allData[prevYear][m].income;
-            const prevExpense = allData[prevYear][m].expense;
-            allData[currentYear][m].income = prevIncome;
-            allData[currentYear][m].expense = prevExpense;
+        const prev = currentYear - 1;
+        ensureYearData(prev); ensureYearData(currentYear);
+        for (let m=1;m<=12;m++) {
+            allData[currentYear][m].income = allData[prev][m].income;
+            allData[currentYear][m].expense = allData[prev][m].expense;
         }
         saveToLocalStorage();
         renderTableByYear(currentYear);
         updateStats(currentYear);
-        // 提示
-        alert(`已将 ${prevYear} 年收支数据复制到 ${currentYear} 年`);
+        alert(`已将 ${prev} 年数据复制到 ${currentYear}`);
     }
-    
-    // 清空本年
     function clearCurrentYear() {
-        if (confirm(`⚠️ 确定清空 ${currentYear} 年所有月份的收入和支出吗？`)) {
-            ensureCurrentYearData(currentYear);
-            for (let m = 1; m <= 12; m++) {
-                allData[currentYear][m].income = 0;
-                allData[currentYear][m].expense = 0;
-            }
-            saveToLocalStorage();
-            renderTableByYear(currentYear);
-            updateStats(currentYear);
-        }
+        if (!confirm(`清空 ${currentYear} 年所有数据？`)) return;
+        ensureYearData(currentYear);
+        for (let m=1;m<=12;m++) { allData[currentYear][m].income = 0; allData[currentYear][m].expense = 0; }
+        saveToLocalStorage();
+        renderTableByYear(currentYear);
+        updateStats(currentYear);
     }
-    
-    // 导出 CSV（全部年份数据）
     function exportAllToCSV() {
         const rows = [["年份","月份","收入(元)","支出(元)"]];
-        const years = Object.keys(allData).sort((a,b)=>parseInt(a)-parseInt(b));
-        for (let y of years) {
-            const year = parseInt(y);
-            for (let m = 1; m <= 12; m++) {
-                const inc = allData[year][m]?.income || 0;
-                const exp = allData[year][m]?.expense || 0;
-                rows.push([year, m, inc, exp]);
+        for (let y in allData) {
+            for (let m=1;m<=12;m++) {
+                const inc = allData[y][m]?.income || 0;
+                const exp = allData[y][m]?.expense || 0;
+                rows.push([y, m, inc, exp]);
             }
         }
-        const csvContent = rows.map(row => row.join(",")).join("\n");
-        const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.href = url;
-        link.setAttribute("download", `记账本_全量数据.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        const csv = rows.map(r=>r.join(",")).join("\n");
+        const blob = new Blob(["\uFEFF" + csv], {type:"text/csv;charset=utf-8"});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `记账_全量.csv`;
+        a.click();
+        URL.revokeObjectURL(a.href);
     }
-    
-    // ---------- 计算器逻辑 (对选中单元格赋值/表达式)----------
-    function updateCalcDisplay(value) {
-        calcExpression = value.toString();
-        document.getElementById('calcDisplay').innerText = calcExpression;
-    }
-    
-    function appendDigit(digit) {
-        if (justEvaluated) {
-            calcExpression = digit;
-            justEvaluated = false;
-        } else {
-            if (calcExpression === "0" && digit !== ".") calcExpression = digit;
-            else calcExpression += digit;
-        }
+
+    // 计算器逻辑
+    function updateCalcDisplay(value) { calcExpression = value; document.getElementById('calcDisplay').innerText = calcExpression; }
+    function appendDigit(d) {
+        if (justEvaluated) { calcExpression = d; justEvaluated = false; }
+        else { if (calcExpression === "0" && d !== ".") calcExpression = d; else calcExpression += d; }
         updateCalcDisplay(calcExpression);
     }
-    
     function appendOperator(op) {
         if (justEvaluated) justEvaluated = false;
-        const lastChar = calcExpression.slice(-1);
-        if (['+','-','*','/'].includes(lastChar)) {
-            calcExpression = calcExpression.slice(0, -1) + op;
-        } else {
-            calcExpression += op;
-        }
+        const last = calcExpression.slice(-1);
+        if (['+','-','*','/'].includes(last)) calcExpression = calcExpression.slice(0,-1) + op;
+        else calcExpression += op;
         updateCalcDisplay(calcExpression);
     }
-    
-    function evaluateExpression() {
-        try {
-            let expr = calcExpression.replace(/×/g, '*').replace(/÷/g, '/');
-            let result = eval(expr);
-            if (isNaN(result) || !isFinite(result)) result = 0;
-            result = parseFloat(result.toFixed(10));
-            calcExpression = result.toString();
-            updateCalcDisplay(calcExpression);
-            justEvaluated = true;
-            return result;
-        } catch(e) {
-            calcExpression = "0";
-            updateCalcDisplay(calcExpression);
-            return 0;
-        }
-    }
-    
-    function clearCalculator() {
-        calcExpression = "0";
-        justEvaluated = false;
+    function evaluateAndFill() {
+        if (!selectedCell.year || !selectedCell.month || !selectedCell.field) { alert("请先点击选中一个收入/支出单元格"); return; }
+        let expr = calcExpression.replace(/×/g, '*').replace(/÷/g, '/');
+        let result;
+        try { result = eval(expr); if (isNaN(result) || !isFinite(result)) result = 0; result = parseFloat(result.toFixed(10)); }
+        catch(e) { result = 0; }
+        calcExpression = result.toString();
         updateCalcDisplay(calcExpression);
-    }
-    
-    // 将计算结果填入当前选中的单元格
-    function fillResultToSelectedCell() {
-        if (!selectedCell.year || !selectedCell.month || !selectedCell.field) {
-            alert("请先点击表格中的收入或支出单元格进行选中");
-            return false;
-        }
-        let result = evaluateExpression();  // 计算表达式并更新显示
-        const numResult = parseFloat(result);
-        if (isNaN(numResult)) return false;
-        // 更新数据
-        if (selectedCell.field === 'income') {
-            allData[selectedCell.year][selectedCell.month].income = numResult;
-        } else {
-            allData[selectedCell.year][selectedCell.month].expense = numResult;
-        }
+        justEvaluated = true;
+        // 填入选中单元格
+        if (selectedCell.field === 'income') allData[selectedCell.year][selectedCell.month].income = result;
+        else allData[selectedCell.year][selectedCell.month].expense = result;
         saveToLocalStorage();
-        // 重新渲染当前年份表格，保持选中状态
         if (selectedCell.year === currentYear) {
             renderTableByYear(currentYear);
-            // 尝试恢复高亮和选中状态
-            const newInput = document.querySelector(`input[data-year='${selectedCell.year}'][data-month='${selectedCell.month}'][data-field='${selectedCell.field}']`);
-            if (newInput) {
-                clearHighlight();
-                newInput.classList.add('selected-cell');
-                selectedCell.element = newInput;
-            }
+            const newInp = document.querySelector(`input[data-year='${selectedCell.year}'][data-month='${selectedCell.month}'][data-field='${selectedCell.field}']`);
+            if (newInp) { clearHighlight(); newInp.classList.add('selected-cell'); selectedCell.element = newInp; }
             updateStats(currentYear);
         } else {
-            // 如果修改的不是当前年份，需要切换年份时刷新数据
+            // 跨年情况只更新那个年份的数据（但当前视图不变，可以刷新表格避免数据不同步，简单重新渲染）
             if (selectedCell.year === currentYear) updateStats(currentYear);
-            else {
-                // 跨年修改不影响当前视图，但保存数据即可
-            }
-        }
-        updateSelectedHint();
-        return true;
-    }
-    
-    // 快捷加减乘除 (弹出窗口)
-    function quickOperation(op) {
-        if (!selectedCell.year || !selectedCell.month || !selectedCell.field) {
-            alert("请先点击选中一个收入/支出单元格");
-            return;
-        }
-        const currentVal = (selectedCell.field === 'income') ? allData[selectedCell.year][selectedCell.month].income : allData[selectedCell.year][selectedCell.month].expense;
-        let msg = "";
-        let newVal = currentVal;
-        if (op === 'add') {
-            let delta = parseFloat(prompt(`当前值: ${currentVal}\n输入增加金额:`, "0"));
-            if (isNaN(delta)) return;
-            newVal = currentVal + delta;
-        } else if (op === 'sub') {
-            let delta = parseFloat(prompt(`当前值: ${currentVal}\n输入减少金额:`, "0"));
-            if (isNaN(delta)) return;
-            newVal = currentVal - delta;
-        } else if (op === 'mul') {
-            let factor = parseFloat(prompt(`当前值: ${currentVal}\n输入乘数:`, "1"));
-            if (isNaN(factor)) return;
-            newVal = currentVal * factor;
-        } else if (op === 'div') {
-            let divisor = parseFloat(prompt(`当前值: ${currentVal}\n输入除数:`, "1"));
-            if (isNaN(divisor) || divisor === 0) { alert("除数不能为0"); return; }
-            newVal = currentVal / divisor;
-        }
-        if (selectedCell.field === 'income') allData[selectedCell.year][selectedCell.month].income = newVal;
-        else allData[selectedCell.year][selectedCell.month].expense = newVal;
-        saveToLocalStorage();
-        if (selectedCell.year === currentYear) {
-            renderTableByYear(currentYear);
-            const restored = document.querySelector(`input[data-year='${selectedCell.year}'][data-month='${selectedCell.month}'][data-field='${selectedCell.field}']`);
-            if (restored) {
-                clearHighlight();
-                restored.classList.add('selected-cell');
-                selectedCell.element = restored;
-            }
-            updateStats(currentYear);
-        } else {
-            // 非当前年份重新渲染的话无需刷新表格视图因为当前视图不是该年份
-            if(selectedCell.year === currentYear) updateStats(currentYear);
+            else { /* 非当前视图，仅保存即可 */ }
         }
         updateSelectedHint();
     }
-    
-    // 绑定所有事件
+    function clearCalculator() { calcExpression = "0"; justEvaluated = false; updateCalcDisplay(calcExpression); }
+
     function bindEvents() {
-        document.getElementById('prevYearBtn').addEventListener('click', () => setYear(currentYear - 1));
-        document.getElementById('nextYearBtn').addEventListener('click', () => setYear(currentYear + 1));
-        document.getElementById('exportCsvBtn').addEventListener('click', exportAllToCSV);
-        document.getElementById('copyLastYearBtn').addEventListener('click', copyPreviousYearData);
-        document.getElementById('clearCurrentYearBtn').addEventListener('click', clearCurrentYear);
-        // 计算器按钮
-        document.querySelectorAll('.key[data-digit]').forEach(btn => {
-            btn.addEventListener('click', () => appendDigit(btn.getAttribute('data-digit')));
-        });
-        document.querySelectorAll('.key[data-op]').forEach(btn => {
-            btn.addEventListener('click', () => appendOperator(btn.getAttribute('data-op')));
-        });
-        document.querySelector('[data-action="clear"]').addEventListener('click', clearCalculator);
-        document.querySelector('[data-action="equal"]').addEventListener('click', () => fillResultToSelectedCell());
-        // 快捷加减乘除
-        document.querySelectorAll('.quick-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const op = btn.getAttribute('data-quick');
-                if (op === 'add') quickOperation('add');
-                else if (op === 'sub') quickOperation('sub');
-                else if (op === 'mul') quickOperation('mul');
-                else if (op === 'div') quickOperation('div');
-            });
-        });
+        document.getElementById('prevYearBtn').onclick = () => setYear(currentYear-1);
+        document.getElementById('nextYearBtn').onclick = () => setYear(currentYear+1);
+        document.getElementById('exportCsvBtn').onclick = exportAllToCSV;
+        document.getElementById('copyLastYearBtn').onclick = copyPreviousYearData;
+        document.getElementById('clearCurrentYearBtn').onclick = clearCurrentYear;
+        // 键盘按钮
+        document.querySelectorAll('.key[data-digit]').forEach(btn => btn.onclick = () => appendDigit(btn.dataset.digit));
+        document.querySelectorAll('.key[data-op]').forEach(btn => btn.onclick = () => appendOperator(btn.dataset.op));
+        document.querySelector('[data-action="clear"]').onclick = clearCalculator;
+        document.querySelector('[data-action="equal"]').onclick = evaluateAndFill;
     }
-    
-    // 初始化
+
     function init() {
         loadFromStorage();
-        // 确保当前年份完整
-        ensureCurrentYearData(currentYear);
+        ensureYearData(currentYear);
         renderTableByYear(currentYear);
         updateStats(currentYear);
         bindEvents();
